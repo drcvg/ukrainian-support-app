@@ -110,6 +110,19 @@ class HomePage extends StatelessWidget {
                         // Lo conectaremos cuando creemos la pantalla.
                       },
                     ),
+                                        const SizedBox(height: 16),
+
+                    // Acceso temporal para probar los modelos ONNX.
+                    _HomeCard(
+                      icon: Icons.memory_rounded,
+                      title: 'Prueba ONNX',
+                      description:
+                          'Comprueba el motor de traducción y prepara los modelos offline.',
+                      color: AppColors.blueDark,
+                      onTap: () {
+                        context.go('/onnx-test');
+                      },
+                    ),
                   ],
                 ),
               ),
