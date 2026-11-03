@@ -7,6 +7,24 @@ import 'package:flutter/foundation.dart';
 
 import 'model_files_service.dart';
 
+class _TranslationModelData {
+  const _TranslationModelData({
+    required this.sourceTokenizer,
+    required this.targetTokenizer,
+    required this.vocabulary,
+    required this.inverseVocabulary,
+    required this.startTokenId,
+    required this.vocabularySize,
+  });
+
+  final SentencePieceTokenizer sourceTokenizer;
+  final SentencePieceTokenizer targetTokenizer;
+  final Map<String, int> vocabulary;
+  final Map<int, String> inverseVocabulary;
+  final int startTokenId;
+  final int vocabularySize;
+}
+
 class MarianMTService {
   static const int _eosTokenId = 0;
   static const int _maxOutputTokens = 64;
@@ -15,6 +33,8 @@ class MarianMTService {
 
   OrtSession? _encoder;
   OrtSession? _decoder;
+
+  final Map<String, _TranslationModelData> _modelCache = {};
 
   SentencePieceTokenizer? _sourceTokenizer;
   SentencePieceTokenizer? _targetTokenizer;
@@ -270,32 +290,49 @@ class MarianMTService {
       throw StateError('No se encontró la ruta del modelo $direction.');
     }
 
-    final config = direction == 'es_uk'
-        ? (startId: 62459, vocabSize: 62460)
-        : (startId: 61937, vocabSize: 61938);
+    var modelData = _modelCache[direction];
 
-    _startTokenId = config.startId;
-    _vocabularySize = config.vocabSize;
+    if (modelData == null) {
+      final config = direction == 'es_uk'
+          ? (startId: 62459, vocabSize: 62460)
+          : (startId: 61937, vocabSize: 61938);
 
-    final vocabularyFile = File('$directory/vocab.json');
-    final vocabularyJson =
-        jsonDecode(await vocabularyFile.readAsString()) as Map<String, dynamic>;
+      final vocabularyFile = File('$directory/vocab.json');
 
-    _vocabulary = vocabularyJson.map(
-      (piece, id) => MapEntry(piece, (id as num).toInt()),
-    );
+      final vocabularyJson = jsonDecode(
+        await vocabularyFile.readAsString(),
+      ) as Map<String, dynamic>;
 
-    _inverseVocabulary = {
-      for (final entry in _vocabulary.entries) entry.value: entry.key,
-    };
+      final vocabulary = vocabularyJson.map(
+        (piece, id) => MapEntry(piece, (id as num).toInt()),
+      );
 
-    _sourceTokenizer = SentencePieceTokenizer.fromModelFileSync(
-      '$directory/source.spm',
-    );
+      final inverseVocabulary = {
+        for (final entry in vocabulary.entries) entry.value: entry.key,
+      };
 
-    _targetTokenizer = SentencePieceTokenizer.fromModelFileSync(
-      '$directory/target.spm',
-    );
+      modelData = _TranslationModelData(
+        sourceTokenizer: SentencePieceTokenizer.fromModelFileSync(
+          '$directory/source.spm',
+        ),
+        targetTokenizer: SentencePieceTokenizer.fromModelFileSync(
+          '$directory/target.spm',
+        ),
+        vocabulary: vocabulary,
+        inverseVocabulary: inverseVocabulary,
+        startTokenId: config.startId,
+        vocabularySize: config.vocabSize,
+      );
+
+      _modelCache[direction] = modelData;
+    }
+
+    _sourceTokenizer = modelData.sourceTokenizer;
+    _targetTokenizer = modelData.targetTokenizer;
+    _vocabulary = modelData.vocabulary;
+    _inverseVocabulary = modelData.inverseVocabulary;
+    _startTokenId = modelData.startTokenId;
+    _vocabularySize = modelData.vocabularySize;
 
     try {
       _encoder = await _runtime.createSession('$directory/encoder_model.onnx');

@@ -66,6 +66,7 @@ class ModelFilesService {
   );
 
   static bool _downloading = false;
+  static Map<String, String>? _cachedDirectories;
 
   /// Prepara ambos modelos y devuelve sus rutas locales.
   ///
@@ -73,6 +74,11 @@ class ModelFilesService {
   static Future<Map<String, String>> prepareModels({
     ValueChanged<double>? progress,
   }) async {
+    final cachedDirectories = _cachedDirectories;
+
+    if (cachedDirectories != null) {
+      return cachedDirectories;
+    }
     if (_downloading) {
       throw StateError('Ya hay una descarga de modelos en curso.');
     }
@@ -113,7 +119,6 @@ class ModelFilesService {
 
           if (await _isValid(destination, specification)) {
             completedBytes += specification.size;
-            progress?.call(completedBytes / totalBytes);
             continue;
           }
 
@@ -165,9 +170,9 @@ class ModelFilesService {
         directories[direction] = directory.path;
       }
 
-      progress?.call(1.0);
+      _cachedDirectories = Map<String, String>.unmodifiable(directories);
 
-      return Map<String, String>.unmodifiable(directories);
+      return _cachedDirectories!;
     } finally {
       _downloading = false;
     }

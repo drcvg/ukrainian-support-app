@@ -30,6 +30,7 @@ class _TranslationPageState extends State<TranslationPage> {
   bool _hasError = false;
 
   double? _modelPreparationProgress;
+  bool _isPreparingModel = false;
   String _statusMessage = '';
 
   @override
@@ -68,6 +69,9 @@ class _TranslationPageState extends State<TranslationPage> {
       _isLoading = true;
       _hasError = false;
       _translation = '';
+      _isPreparingModel = true;
+      _modelPreparationProgress = null;
+      _statusMessage = 'Cargando traductor...';
     });
 
     try {
@@ -75,15 +79,14 @@ class _TranslationPageState extends State<TranslationPage> {
         text,
         spanishToUkrainian: _sourceLanguage == 'Español',
         onModelPreparationProgress: (progress) {
-          if (!mounted) return;
+  if (!mounted) return;
 
-          setState(() {
-            _modelPreparationProgress = progress;
-            _statusMessage = progress < 1.0
-                ? 'Preparando los modelos de traducción...'
-                : 'Modelos preparados. Iniciando traducción...';
-          });
-        },
+  setState(() {
+    _isPreparingModel = false;
+    _modelPreparationProgress = progress;
+    _statusMessage = 'Descargando modelos de traducción...';
+  });
+},
       );
 
       if (!mounted) return;
@@ -109,6 +112,7 @@ class _TranslationPageState extends State<TranslationPage> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isPreparingModel = false;
           _modelPreparationProgress = null;
           _statusMessage = '';
         });
@@ -218,7 +222,6 @@ class _TranslationPageState extends State<TranslationPage> {
                     _buildResultSection(),
 
                     const SizedBox(height: 24),
-
                   ],
                 ),
               ),
@@ -430,9 +433,7 @@ class _TranslationPageState extends State<TranslationPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _statusMessage.isEmpty
-                ? 'Preparando el traductor...'
-                : _statusMessage,
+            _statusMessage.isEmpty ? 'Cargando traductor...' : _statusMessage,
             style: const TextStyle(
               color: AppColors.dark,
               fontSize: 14,
@@ -440,19 +441,33 @@ class _TranslationPageState extends State<TranslationPage> {
             ),
           ),
           const SizedBox(height: 12),
-          LinearProgressIndicator(
-            value: progress,
-            minHeight: 6,
-            borderRadius: BorderRadius.circular(8),
-            backgroundColor: AppColors.blueLight,
-            color: AppColors.blue,
-          ),
-          if (progress != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${(progress * 100).round()} %',
-              style: const TextStyle(color: AppColors.medium, fontSize: 13),
+
+          if (_isPreparingModel)
+            const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: AppColors.blue,
+                ),
+              ),
+            )
+          else ...[
+            LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              borderRadius: BorderRadius.circular(8),
+              backgroundColor: AppColors.blueLight,
+              color: AppColors.blue,
             ),
+            if (progress != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${(progress * 100).round()} %',
+                style: const TextStyle(color: AppColors.medium, fontSize: 13),
+              ),
+            ],
           ],
         ],
       ),
