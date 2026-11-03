@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
@@ -46,6 +45,11 @@ class ModelFilesService {
             '7279ea769dfe619819a732f8eaa42ea98d46219d322ddb9845d3de6de3c46989',
       ),
       'generation_config.json': _ModelFile(304),
+      'source.spm': _ModelFile(
+        1008282,
+        sha256:
+            '849d7708079dd2b304f27f0b4abdb647d1d0108a8f291328a41a6e26eb0b55d5',
+      ),
       'special_tokens_map.json': _ModelFile(79),
       'target.spm': _ModelFile(833438),
       'tokenizer_config.json': _ModelFile(886),
@@ -136,9 +140,7 @@ class ModelFilesService {
 
                 final overall = completedBytes + currentBytes;
 
-                progress?.call(
-                  (overall / totalBytes).clamp(0.0, 1.0),
-                );
+                progress?.call((overall / totalBytes).clamp(0.0, 1.0));
               },
             );
 
@@ -171,10 +173,7 @@ class ModelFilesService {
     }
   }
 
-  static Future<bool> _isValid(
-    File file,
-    _ModelFile specification,
-  ) async {
+  static Future<bool> _isValid(File file, _ModelFile specification) async {
     if (!await file.exists()) {
       return false;
     }

@@ -1,10 +1,9 @@
-
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dart_sentencepiece_tokenizer/dart_sentencepiece_tokenizer.dart';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
+import 'package:flutter/foundation.dart';
 
 import 'model_files_service.dart';
 
@@ -32,15 +31,14 @@ class MarianMTService {
   Future<String> translate(
     String text, {
     required bool spanishToUkrainian,
+    ValueChanged<double>? onModelPreparationProgress,
   }) async {
     if (_closed) {
       throw StateError('El servicio de traducción está cerrado.');
     }
 
     if (_busy) {
-      throw StateError(
-        'Ya hay una traducción en curso. Inténtalo de nuevo.',
-      );
+      throw StateError('Ya hay una traducción en curso. Inténtalo de nuevo.');
     }
 
     final input = text.trim();
@@ -54,7 +52,10 @@ class MarianMTService {
     try {
       final direction = spanishToUkrainian ? 'es_uk' : 'uk_es';
 
-      await _loadDirection(direction);
+      await _loadDirection(
+        direction,
+        onModelPreparationProgress: onModelPreparationProgress,
+      );
 
       final sourceTokenizer = _sourceTokenizer!;
       final targetTokenizer = _targetTokenizer!;
@@ -112,9 +113,7 @@ class MarianMTService {
           final hiddenStatesValue = encoderOutputs['last_hidden_state'];
 
           if (hiddenStatesValue == null) {
-            throw StateError(
-              'El encoder no devolvió last_hidden_state.',
-            );
+            throw StateError('El encoder no devolvió last_hidden_state.');
           }
 
           final hiddenValues = await hiddenStatesValue.asFlattenedList();
@@ -154,10 +153,11 @@ class MarianMTService {
       [1, sourceLength],
     );
 
-    final encoderHiddenStates = await OrtValue.fromList(
-      hiddenStates,
-      [1, sourceLength, 512],
-    );
+    final encoderHiddenStates = await OrtValue.fromList(hiddenStates, [
+      1,
+      sourceLength,
+      512,
+    ]);
 
     try {
       for (var step = 0; step < _maxOutputTokens; step++) {
@@ -199,8 +199,7 @@ class MarianMTService {
                 continue;
               }
 
-              final score =
-                  (logits[lastPositionOffset + id] as num).toDouble();
+              final score = (logits[lastPositionOffset + id] as num).toDouble();
 
               if (score > bestScore) {
                 bestScore = score;
@@ -213,9 +212,7 @@ class MarianMTService {
             }
 
             if (bestId < 0) {
-              throw StateError(
-                'No se pudo seleccionar el siguiente token.',
-              );
+              throw StateError('No se pudo seleccionar el siguiente token.');
             }
 
             generatedIds.add(bestId);
@@ -254,22 +251,23 @@ class MarianMTService {
         .trim();
   }
 
-  Future<void> _loadDirection(String direction) async {
-    if (_loadedDirection == direction &&
-        _encoder != null &&
-        _decoder != null) {
+  Future<void> _loadDirection(
+    String direction, {
+    ValueChanged<double>? onModelPreparationProgress,
+  }) async {
+    if (_loadedDirection == direction && _encoder != null && _decoder != null) {
       return;
     }
 
     await _releaseSessions();
 
-    final directories = await ModelFilesService.prepareModels();
+    final directories = await ModelFilesService.prepareModels(
+      progress: onModelPreparationProgress,
+    );
     final directory = directories[direction];
 
     if (directory == null) {
-      throw StateError(
-        'No se encontró la ruta del modelo $direction.',
-      );
+      throw StateError('No se encontró la ruta del modelo $direction.');
     }
 
     final config = direction == 'es_uk'
@@ -281,8 +279,7 @@ class MarianMTService {
 
     final vocabularyFile = File('$directory/vocab.json');
     final vocabularyJson =
-        jsonDecode(await vocabularyFile.readAsString())
-            as Map<String, dynamic>;
+        jsonDecode(await vocabularyFile.readAsString()) as Map<String, dynamic>;
 
     _vocabulary = vocabularyJson.map(
       (piece, id) => MapEntry(piece, (id as num).toInt()),
@@ -301,13 +298,9 @@ class MarianMTService {
     );
 
     try {
-      _encoder = await _runtime.createSession(
-        '$directory/encoder_model.onnx',
-      );
+      _encoder = await _runtime.createSession('$directory/encoder_model.onnx');
 
-      _decoder = await _runtime.createSession(
-        '$directory/decoder_model.onnx',
-      );
+      _decoder = await _runtime.createSession('$directory/decoder_model.onnx');
 
       _loadedDirection = direction;
     } catch (_) {

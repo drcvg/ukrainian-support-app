@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../shared/widgets/bottom_navigation.dart';
@@ -16,6 +17,9 @@ class TranslationPage extends StatefulWidget {
 class _TranslationPageState extends State<TranslationPage> {
   final TextEditingController _inputController = TextEditingController();
   final MarianMTService _marianService = MarianMTService();
+  final FlutterTts _flutterTts = FlutterTts();
+
+  bool _isSpeaking = false;
 
   String _sourceLanguage = 'Ucraniano';
   String _targetLanguage = 'Español';
@@ -24,6 +28,9 @@ class _TranslationPageState extends State<TranslationPage> {
 
   bool _isLoading = false;
   bool _hasError = false;
+
+  double? _modelPreparationProgress;
+  String _statusMessage = '';
 
   @override
   void dispose() {
@@ -51,6 +58,8 @@ class _TranslationPageState extends State<TranslationPage> {
       setState(() {
         _hasError = true;
         _translation = '';
+        _modelPreparationProgress = null;
+        _statusMessage = '';
       });
       return;
     }
@@ -65,6 +74,16 @@ class _TranslationPageState extends State<TranslationPage> {
       final translation = await _marianService.translate(
         text,
         spanishToUkrainian: _sourceLanguage == 'Español',
+        onModelPreparationProgress: (progress) {
+          if (!mounted) return;
+
+          setState(() {
+            _modelPreparationProgress = progress;
+            _statusMessage = progress < 1.0
+                ? 'Preparando los modelos de traducción...'
+                : 'Modelos preparados. Iniciando traducción...';
+          });
+        },
       );
 
       if (!mounted) return;
@@ -90,6 +109,8 @@ class _TranslationPageState extends State<TranslationPage> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _modelPreparationProgress = null;
+          _statusMessage = '';
         });
       }
     }
@@ -108,6 +129,39 @@ class _TranslationPageState extends State<TranslationPage> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _speakTranslation() async {
+    if (_translation.isEmpty || _isSpeaking) return;
+
+    try {
+      setState(() {
+        _isSpeaking = true;
+      });
+
+      await _flutterTts.setLanguage(
+        _targetLanguage == 'Español' ? 'es-ES' : 'uk-UA',
+      );
+
+      await _flutterTts.setSpeechRate(0.45);
+      await _flutterTts.setVolume(1.0);
+      await _flutterTts.setPitch(1.0);
+      await _flutterTts.awaitSpeakCompletion(true);
+
+      await _flutterTts.speak(_translation);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo reproducir el audio: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+        });
+      }
+    }
   }
 
   @override
@@ -157,9 +211,14 @@ class _TranslationPageState extends State<TranslationPage> {
 
                     _buildTranslateButton(),
 
+                    _buildPreparationProgress(),
+
                     const SizedBox(height: 24),
 
                     _buildResultSection(),
+
+                    const SizedBox(height: 24),
+
                   ],
                 ),
               ),
@@ -351,6 +410,55 @@ class _TranslationPageState extends State<TranslationPage> {
     );
   }
 
+  Widget _buildPreparationProgress() {
+    if (!_isLoading) {
+      return const SizedBox.shrink();
+    }
+
+    final progress = _modelPreparationProgress;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _statusMessage.isEmpty
+                ? 'Preparando el traductor...'
+                : _statusMessage,
+            style: const TextStyle(
+              color: AppColors.dark,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: progress,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(8),
+            backgroundColor: AppColors.blueLight,
+            color: AppColors.blue,
+          ),
+          if (progress != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${(progress * 100).round()} %',
+              style: const TextStyle(color: AppColors.medium, fontSize: 13),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildResultSection() {
     if (_translation.isEmpty && !_isLoading) {
       return Container(
@@ -428,11 +536,11 @@ class _TranslationPageState extends State<TranslationPage> {
 
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // TTS lo conectaremos después.
-                  },
+                  onPressed: _translation.isEmpty || _isSpeaking
+                      ? null
+                      : _speakTranslation,
                   icon: const Icon(Icons.volume_up_outlined, size: 18),
-                  label: const Text('Escuchar'),
+                  label: Text(_isSpeaking ? 'Reproduciendo...' : 'Escuchar'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.blue,
                     side: const BorderSide(color: AppColors.blue),
