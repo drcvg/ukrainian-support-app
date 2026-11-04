@@ -107,8 +107,23 @@ class HomePage extends StatelessWidget {
                         context.push('/resources');
                       },
                     ),
+                                        const SizedBox(height: 16),
+
+                    // Organizaciones
+                    _HomeCard(
+                      icon: Icons.groups_outlined,
+                      title: 'Organizaciones',
+                      description:
+                          'Conoce asociaciones y comunidades ucranianas en España.',
+                      color: AppColors.blue,
+                      onTap: () {
+                        context.push('/organizations');
+                      },
+                    ),
+
                     const SizedBox(height: 16),
                   ],
+                
                 ),
               ),
             ),
