@@ -1,4 +1,3 @@
-
 class Recurso {
   final String id;
   final String nombre;
@@ -18,7 +17,7 @@ class Recurso {
 const List<Recurso> recursos = [
   Recurso(
     id: 'cruz-roja',
-    nombre: 'Cruz Roja España',
+    nombre: 'Cruz Roja Española',
     categoria: 'Ayuda humanitaria',
     descripcion:
         'Información sobre programas de apoyo y atención '

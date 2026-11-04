@@ -104,14 +104,14 @@ class HomePage extends StatelessWidget {
                       description: 'Encuentra organizaciones y recursos de ayuda disponibles.',
                       color: const Color(0xFF286C6D),
                       onTap: () {
-                        // Lo conectaremos cuando creemos la pantalla.
+                        context.push('/resources');
                       },
                     ),
                     const SizedBox(height: 16),
                   ],
                 ),
-                ),
-              ),    
+              ),
+            ),
 
             // Navegación inferior
             AppBottomNavigation(
