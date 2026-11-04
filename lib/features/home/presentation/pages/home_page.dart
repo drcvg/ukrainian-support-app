@@ -91,7 +91,7 @@ class HomePage extends StatelessWidget {
                       description: 'Consulta información sobre trámites importantes en España.',
                       color: AppColors.blueDark,
                       onTap: () {
-                        // Lo conectaremos cuando creemos la pantalla.
+                        context.push('/administrative-procedures');
                       },
                     ),
 
