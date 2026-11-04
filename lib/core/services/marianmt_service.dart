@@ -6,6 +6,7 @@ import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:flutter/foundation.dart';
 
 import 'model_files_service.dart';
+import 'text_normalizer.dart';
 
 class _TranslationModelData {
   const _TranslationModelData({
@@ -61,7 +62,9 @@ class MarianMTService {
       throw StateError('Ya hay una traducción en curso. Inténtalo de nuevo.');
     }
 
-    final input = text.trim();
+final input = spanishToUkrainian
+    ? TextNormalizer.normalize(text.trim())
+    : text.trim();
 
     if (input.isEmpty) {
       throw ArgumentError('Introduce un texto para traducir.');
