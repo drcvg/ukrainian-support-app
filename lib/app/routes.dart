@@ -5,6 +5,7 @@ import '../features/splash/presentation/pages/splash_page.dart';
 import '../features/translation/presentation/pages/translation_page.dart';
 import '../features/administrative_procedures/presentation/page/procedures_page.dart';
 import '../features/administrative_procedures/presentation/page/procedure_detail_page.dart';
+import '../features/resources/presentation/pages/resources_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -23,6 +24,10 @@ final appRouter = GoRouter(
       path: '/administrative-procedures/:id',
       builder: (context, state) =>
           ProcedureDetailPage(procedureId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/resources',
+      builder: (context, state) => const ResourcesPage(),
     ),
   ],
 );
