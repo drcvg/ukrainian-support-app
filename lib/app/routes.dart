@@ -6,6 +6,7 @@ import '../features/translation/presentation/pages/translation_page.dart';
 import '../features/administrative_procedures/presentation/page/procedures_page.dart';
 import '../features/administrative_procedures/presentation/page/procedure_detail_page.dart';
 import '../features/resources/presentation/pages/resources_page.dart';
+import '../features/organizations/presentation/pages/organizations_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -29,5 +30,9 @@ final appRouter = GoRouter(
       path: '/resources',
       builder: (context, state) => const ResourcesPage(),
     ),
+    GoRoute(
+  path: '/organizations',
+  builder: (context, state) => const OrganizationsPage(),
+),
   ],
 );
