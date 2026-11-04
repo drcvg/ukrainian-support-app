@@ -75,8 +75,7 @@ class HomePage extends StatelessWidget {
                     _HomeCard(
                       icon: Icons.translate_rounded,
                       title: 'Traductor Offline',
-                      description:
-                          'Traduce entre español y ucraniano sin conexión a Internet.',
+                      description: 'Traduce entre español y ucraniano sin conexión a Internet.',
                       color: AppColors.blue,
                       onTap: () {
                         context.go('/translation');
@@ -89,8 +88,7 @@ class HomePage extends StatelessWidget {
                     _HomeCard(
                       icon: Icons.description_outlined,
                       title: 'Trámites Administrativos',
-                      description:
-                          'Consulta información sobre trámites importantes en España.',
+                      description: 'Consulta información sobre trámites importantes en España.',
                       color: AppColors.blueDark,
                       onTap: () {
                         // Lo conectaremos cuando creemos la pantalla.
@@ -103,27 +101,27 @@ class HomePage extends StatelessWidget {
                     _HomeCard(
                       icon: Icons.support_agent_rounded,
                       title: 'Recursos de Apoyo',
-                      description:
-                          'Encuentra organizaciones y recursos de ayuda disponibles.',
+                      description: 'Encuentra organizaciones y recursos de ayuda disponibles.',
                       color: const Color(0xFF286C6D),
                       onTap: () {
                         // Lo conectaremos cuando creemos la pantalla.
                       },
                     ),
+                    const SizedBox(height: 16),
                   ],
                 ),
-              ),
-            ),
+                ),
+              ),    
 
             // Navegación inferior
             AppBottomNavigation(
-  selectedIndex: 0,
-  onItemSelected: (index) {
-    if (index == 1) {
-      context.go('/translation');
-    }
-  },
-),
+              selectedIndex: 0,
+              onItemSelected: (index) {
+                if (index == 1) {
+                  context.go('/translation');
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -159,9 +157,7 @@ class _HomeCard extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.border,
-            ),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,11 +169,7 @@ class _HomeCard extends StatelessWidget {
                   color: color.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 28,
-                ),
+                child: Icon(icon, color: color, size: 28),
               ),
 
               const SizedBox(width: 16),
@@ -227,57 +219,6 @@ class _HomeCard extends StatelessWidget {
                       ],
                     ),
                   ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
-class _NavigationItem extends StatelessWidget {
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _NavigationItem({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? AppColors.blue : AppColors.gray;
-
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                selected ? selectedIcon : icon,
-                color: color,
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight:
-                      selected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ],

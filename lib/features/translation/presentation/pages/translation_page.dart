@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../shared/widgets/bottom_navigation.dart';
+import '../../../../core/services/marianmt_service.dart';
 
 class TranslationPage extends StatefulWidget {
   const TranslationPage({super.key});
@@ -14,6 +16,10 @@ class TranslationPage extends StatefulWidget {
 
 class _TranslationPageState extends State<TranslationPage> {
   final TextEditingController _inputController = TextEditingController();
+  final MarianMTService _marianService = MarianMTService();
+  final FlutterTts _flutterTts = FlutterTts();
+
+  bool _isSpeaking = false;
 
   String _sourceLanguage = 'Ucraniano';
   String _targetLanguage = 'Español';
@@ -23,9 +29,14 @@ class _TranslationPageState extends State<TranslationPage> {
   bool _isLoading = false;
   bool _hasError = false;
 
+  double? _modelPreparationProgress;
+  bool _isPreparingModel = false;
+  String _statusMessage = '';
+
   @override
   void dispose() {
     _inputController.dispose();
+    _marianService.dispose();
     super.dispose();
   }
 
@@ -48,6 +59,8 @@ class _TranslationPageState extends State<TranslationPage> {
       setState(() {
         _hasError = true;
         _translation = '';
+        _modelPreparationProgress = null;
+        _statusMessage = '';
       });
       return;
     }
@@ -56,32 +69,61 @@ class _TranslationPageState extends State<TranslationPage> {
       _isLoading = true;
       _hasError = false;
       _translation = '';
+      _isPreparingModel = true;
+      _modelPreparationProgress = null;
+      _statusMessage = 'Cargando traductor...';
     });
 
-    // Simulación temporal del motor de traducción.
-    await Future.delayed(const Duration(milliseconds: 1100));
+    try {
+      final translation = await _marianService.translate(
+        text,
+        spanishToUkrainian: _sourceLanguage == 'Español',
+        onModelPreparationProgress: (progress) {
+  if (!mounted) return;
 
-    if (!mounted) return;
+  setState(() {
+    _isPreparingModel = false;
+    _modelPreparationProgress = progress;
+    _statusMessage = 'Descargando modelos de traducción...';
+  });
+},
+      );
 
-    setState(() {
-      _isLoading = false;
+      if (!mounted) return;
 
-      if (_sourceLanguage == 'Ucraniano') {
-        _translation =
-            'Esta es una traducción de demostración del ucraniano al español.';
-      } else {
-        _translation =
-            'Це демонстраційний переклад з іспанської на українську.';
+      setState(() {
+        _translation = translation;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _hasError = true;
+        _translation = '';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo traducir el texto: $e'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isPreparingModel = false;
+          _modelPreparationProgress = null;
+          _statusMessage = '';
+        });
       }
-    });
+    }
   }
 
   Future<void> _copyTranslation() async {
     if (_translation.isEmpty) return;
 
-    await Clipboard.setData(
-      ClipboardData(text: _translation),
-    );
+    await Clipboard.setData(ClipboardData(text: _translation));
 
     if (!mounted) return;
 
@@ -91,6 +133,39 @@ class _TranslationPageState extends State<TranslationPage> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _speakTranslation() async {
+    if (_translation.isEmpty || _isSpeaking) return;
+
+    try {
+      setState(() {
+        _isSpeaking = true;
+      });
+
+      await _flutterTts.setLanguage(
+        _targetLanguage == 'Español' ? 'es-ES' : 'uk-UA',
+      );
+
+      await _flutterTts.setSpeechRate(0.45);
+      await _flutterTts.setVolume(1.0);
+      await _flutterTts.setPitch(1.0);
+      await _flutterTts.awaitSpeakCompletion(true);
+
+      await _flutterTts.speak(_translation);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo reproducir el audio: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+        });
+      }
+    }
   }
 
   @override
@@ -140,9 +215,13 @@ class _TranslationPageState extends State<TranslationPage> {
 
                     _buildTranslateButton(),
 
+                    _buildPreparationProgress(),
+
                     const SizedBox(height: 24),
 
                     _buildResultSection(),
+
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -171,10 +250,7 @@ class _TranslationPageState extends State<TranslationPage> {
         children: [
           IconButton(
             onPressed: () => context.go('/'),
-            icon: const Icon(
-              Icons.arrow_back_rounded,
-              color: AppColors.dark,
-            ),
+            icon: const Icon(Icons.arrow_back_rounded, color: AppColors.dark),
           ),
           const Expanded(
             child: Text(
@@ -197,17 +273,12 @@ class _TranslationPageState extends State<TranslationPage> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.border,
-        ),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
           Expanded(
-            child: _LanguageButton(
-              language: _sourceLanguage,
-              onTap: () {},
-            ),
+            child: _LanguageButton(language: _sourceLanguage, onTap: () {}),
           ),
 
           IconButton(
@@ -216,16 +287,11 @@ class _TranslationPageState extends State<TranslationPage> {
               backgroundColor: AppColors.blueLight,
               foregroundColor: AppColors.blue,
             ),
-            icon: const Icon(
-              Icons.swap_horiz_rounded,
-            ),
+            icon: const Icon(Icons.swap_horiz_rounded),
           ),
 
           Expanded(
-            child: _LanguageButton(
-              language: _targetLanguage,
-              onTap: () {},
-            ),
+            child: _LanguageButton(language: _targetLanguage, onTap: () {}),
           ),
         ],
       ),
@@ -252,9 +318,7 @@ class _TranslationPageState extends State<TranslationPage> {
             color: AppColors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: _hasError
-                  ? AppColors.error
-                  : AppColors.border,
+              color: _hasError ? AppColors.error : AppColors.border,
             ),
           ),
           child: TextField(
@@ -270,9 +334,7 @@ class _TranslationPageState extends State<TranslationPage> {
             },
             decoration: InputDecoration(
               hintText: 'Escribe el texto que quieres traducir...',
-              hintStyle: const TextStyle(
-                color: AppColors.gray,
-              ),
+              hintStyle: const TextStyle(color: AppColors.gray),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
               suffixIcon: _inputController.text.isNotEmpty
@@ -284,9 +346,7 @@ class _TranslationPageState extends State<TranslationPage> {
                           _hasError = false;
                         });
                       },
-                      icon: const Icon(
-                        Icons.close_rounded,
-                      ),
+                      icon: const Icon(Icons.close_rounded),
                     )
                   : null,
             ),
@@ -305,10 +365,7 @@ class _TranslationPageState extends State<TranslationPage> {
               SizedBox(width: 6),
               Text(
                 'Escribe un texto para poder traducirlo.',
-                style: TextStyle(
-                  color: AppColors.error,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: AppColors.error, fontSize: 13),
               ),
             ],
           ),
@@ -348,13 +405,71 @@ class _TranslationPageState extends State<TranslationPage> {
                   SizedBox(width: 8),
                   Text(
                     'Traducir',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildPreparationProgress() {
+    if (!_isLoading) {
+      return const SizedBox.shrink();
+    }
+
+    final progress = _modelPreparationProgress;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _statusMessage.isEmpty ? 'Cargando traductor...' : _statusMessage,
+            style: const TextStyle(
+              color: AppColors.dark,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          if (_isPreparingModel)
+            const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: AppColors.blue,
+                ),
+              ),
+            )
+          else ...[
+            LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              borderRadius: BorderRadius.circular(8),
+              backgroundColor: AppColors.blueLight,
+              color: AppColors.blue,
+            ),
+            if (progress != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${(progress * 100).round()} %',
+                style: const TextStyle(color: AppColors.medium, fontSize: 13),
+              ),
+            ],
+          ],
+        ],
       ),
     );
   }
@@ -370,19 +485,12 @@ class _TranslationPageState extends State<TranslationPage> {
         ),
         child: const Column(
           children: [
-            Icon(
-              Icons.translate_rounded,
-              color: AppColors.blue,
-              size: 32,
-            ),
+            Icon(Icons.translate_rounded, color: AppColors.blue, size: 32),
             SizedBox(height: 10),
             Text(
               'La traducción aparecerá aquí',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.medium,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.medium, fontSize: 14),
             ),
           ],
         ),
@@ -395,9 +503,7 @@ class _TranslationPageState extends State<TranslationPage> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.border,
-        ),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,16 +535,11 @@ class _TranslationPageState extends State<TranslationPage> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _copyTranslation,
-                  icon: const Icon(
-                    Icons.copy_outlined,
-                    size: 18,
-                  ),
+                  icon: const Icon(Icons.copy_outlined, size: 18),
                   label: const Text('Copiar'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.blue,
-                    side: const BorderSide(
-                      color: AppColors.blue,
-                    ),
+                    side: const BorderSide(color: AppColors.blue),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -450,19 +551,14 @@ class _TranslationPageState extends State<TranslationPage> {
 
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // TTS lo conectaremos después.
-                  },
-                  icon: const Icon(
-                    Icons.volume_up_outlined,
-                    size: 18,
-                  ),
-                  label: const Text('Escuchar'),
+                  onPressed: _translation.isEmpty || _isSpeaking
+                      ? null
+                      : _speakTranslation,
+                  icon: const Icon(Icons.volume_up_outlined, size: 18),
+                  label: Text(_isSpeaking ? 'Reproduciendo...' : 'Escuchar'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.blue,
-                    side: const BorderSide(
-                      color: AppColors.blue,
-                    ),
+                    side: const BorderSide(color: AppColors.blue),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -481,10 +577,7 @@ class _LanguageButton extends StatelessWidget {
   final String language;
   final VoidCallback onTap;
 
-  const _LanguageButton({
-    required this.language,
-    required this.onTap,
-  });
+  const _LanguageButton({required this.language, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -492,10 +585,7 @@ class _LanguageButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

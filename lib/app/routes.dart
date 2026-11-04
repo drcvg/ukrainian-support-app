@@ -7,17 +7,11 @@ import '../features/translation/presentation/pages/translation_page.dart';
 final appRouter = GoRouter(
   initialLocation: '/splash',
   routes: [
+    GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
+    GoRoute(path: '/', builder: (context, state) => const HomePage()),
     GoRoute(
-      path: '/splash',
-      builder: (context, state) => const SplashPage(),
+      path: '/translation',
+      builder: (context, state) => const TranslationPage(),
     ),
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const HomePage(),
-    ),
-    GoRoute(
-  path: '/translation',
-  builder: (context, state) => const TranslationPage(),
-),
   ],
 );
