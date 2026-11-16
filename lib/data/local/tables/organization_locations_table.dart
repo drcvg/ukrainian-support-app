@@ -1,4 +1,3 @@
-
 import 'package:drift/drift.dart';
 
 import 'organizations_table.dart';
@@ -6,12 +5,12 @@ import 'organizations_table.dart';
 class OrganizationLocations extends Table {
   IntColumn get idUbicacion => integer().autoIncrement()();
 
-TextColumn get identificador => text().nullable()();
+  TextColumn get identificador => text().nullable()();
   IntColumn get idOrganizacion => integer().references(
-        Organizations,
-        #idOrganizacion,
-        onDelete: KeyAction.cascade,
-      )();
+    Organizations,
+    #idOrganizacion,
+    onDelete: KeyAction.cascade,
+  )();
 
   TextColumn get nombreSede => text().nullable()();
 
@@ -23,19 +22,15 @@ TextColumn get identificador => text().nullable()();
 
   TextColumn get email => text().nullable()();
 
-  TextColumn get modalidadAtencion => text().withDefault(
-        const Constant('no_confirmada'),
-      )();
+  TextColumn get modalidadAtencion =>
+      text().withDefault(const Constant('no_confirmada'))();
 
-  TextColumn get estadoUbicacion => text().withDefault(
-        const Constant('pendiente'),
-      )();
+  TextColumn get estadoUbicacion =>
+      text().withDefault(const Constant('pendiente'))();
 
   TextColumn get urlFuente => text().nullable()();
 
   DateTimeColumn get fechaVerificacion => dateTime().nullable()();
 
-  BoolColumn get activo => boolean().withDefault(
-        const Constant(true),
-      )();
+  BoolColumn get activo => boolean().withDefault(const Constant(true))();
 }
