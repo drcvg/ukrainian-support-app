@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,10 +10,9 @@ class ProceduresPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const category = 'Extranjería y situación legal';
-
-    final categoryProcedures = procedures
-        .where((procedure) => procedure.category == category)
+    final categories = procedures
+        .map((procedure) => procedure.category)
+        .toSet()
         .toList();
 
     return Scaffold(
@@ -25,10 +23,7 @@ class ProceduresPage extends StatelessWidget {
         scrolledUnderElevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: AppColors.dark,
-          ),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.dark),
         ),
         title: const Text(
           'Procedimientos administrativos',
@@ -64,80 +59,83 @@ class ProceduresPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.blueDark.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        Icons.gavel_rounded,
-                        color: AppColors.blueDark,
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            category,
-                            style: TextStyle(
-                              color: AppColors.dark,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
+
+              ...categories.map((category) {
+                final categoryProcedures = procedures
+                    .where((procedure) => procedure.category == category)
+                    .toList();
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: AppColors.blueDark.withValues(
+                                  alpha: 0.10,
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.folder_outlined,
+                                color: AppColors.blueDark,
+                                size: 26,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 5),
-                          Text(
-                            'Documentación, residencia y protección '
-                            'internacional.',
-                            style: TextStyle(
-                              color: AppColors.medium,
-                              fontSize: 13,
-                              height: 1.4,
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Text(
+                                category,
+                                style: const TextStyle(
+                                  color: AppColors.dark,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                            Text(
+                              '${categoryProcedures.length}',
+                              style: const TextStyle(
+                                color: AppColors.blue,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Trámites disponibles (${categoryProcedures.length})',
-                style: const TextStyle(
-                  color: AppColors.dark,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 14),
-              ...categoryProcedures.map(
-                (procedure) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: ProcedureCard(
-                    procedure: procedure,
-                    onTap: () {
-                      context.push(
-                        '/administrative-procedures/${procedure.id}',
-                      );
-                    },
+                      const SizedBox(height: 14),
+                      ...categoryProcedures.map(
+                        (procedure) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ProcedureCard(
+                            procedure: procedure,
+                            onTap: () {
+                              context.push(
+                                '/administrative-procedures/${procedure.id}',
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
+                );
+              }),
+
               const SizedBox(height: 8),
               const Text(
                 'La información es orientativa. Consulta siempre '

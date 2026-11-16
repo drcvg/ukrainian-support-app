@@ -13,6 +13,68 @@ class OrganizationCard extends StatelessWidget {
     required this.onTap,
   });
 
+  String _locationLabel() {
+    final cities = organization.locations
+        .map((location) => location.city?.trim() ?? '')
+        .where((city) => city.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (cities.length > 1) {
+      return 'Varias localidades';
+    }
+
+    if (cities.length == 1) {
+      return cities.first;
+    }
+
+    if (organization.city.trim().isNotEmpty) {
+      return organization.city;
+    }
+
+    return 'Ubicación pendiente de confirmar';
+  }
+
+  String _attentionLabel() {
+    final modes = organization.locations
+        .where((location) => location.active)
+        .map((location) => location.attentionMode)
+        .toSet();
+
+    if (modes.isEmpty) {
+      return _attentionText(organization.modalidadAtencion);
+    }
+
+    if (modes.length == 1) {
+      return _attentionText(modes.first);
+    }
+
+    if (modes.contains('territorial')) {
+      return 'Atención territorial';
+    }
+
+    if (modes.contains('cita_previa')) {
+      return 'Consultar modalidad de atención';
+    }
+
+    return 'Modalidad no confirmada';
+  }
+
+  String _attentionText(String mode) {
+    switch (mode) {
+      case 'presencial':
+        return 'Atención presencial';
+      case 'cita_previa':
+        return 'Cita previa';
+      case 'territorial':
+        return 'Atención territorial';
+      case 'digital':
+        return 'Atención digital';
+      default:
+        return 'Modalidad no confirmada';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -64,8 +126,9 @@ class OrganizationCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 7),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Icon(
                           Icons.location_on_outlined,
@@ -75,10 +138,30 @@ class OrganizationCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            organization.city,
+                            _locationLabel(),
                             style: const TextStyle(
                               color: AppColors.medium,
                               fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.access_time_rounded,
+                          color: AppColors.gray,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            _attentionLabel(),
+                            style: const TextStyle(
+                              color: AppColors.medium,
+                              fontSize: 11,
                             ),
                           ),
                         ),

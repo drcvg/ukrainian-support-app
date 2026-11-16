@@ -1,3 +1,5 @@
+import 'organization_location_model.dart';
+
 class Organization {
   final String id;
   final String name;
@@ -8,6 +10,9 @@ class Organization {
   final String phone;
   final String email;
   final String website;
+  final String modalidadAtencion;
+  final String estadoUbicacion;
+  final List<OrganizationLocation> locations;
 
   const Organization({
     required this.id,
@@ -19,5 +24,8 @@ class Organization {
     required this.phone,
     required this.email,
     required this.website,
+    this.modalidadAtencion = 'no_confirmada',
+    this.estadoUbicacion = 'pendiente',
+    this.locations = const [],
   });
 }

@@ -1,4 +1,3 @@
-
 import '../models/procedure_model.dart';
 
 const List<Procedure> procedures = [
@@ -244,6 +243,92 @@ const List<Procedure> procedures = [
       'Comprobar los requisitos específicos.',
       'Presentar la solicitud ante el organismo competente.',
       'Seguir las instrucciones de resolución.',
+    ],
+    officialUrl: 'https://www.inclusion.gob.es/',
+  ),
+  Procedure(
+    id: 'tarjeta-sanitaria',
+    category: 'Salud',
+    title: 'Acceder a la tarjeta sanitaria',
+    description:
+        'Orientación sobre el acceso a la asistencia sanitaria pública '
+        'en España y los trámites para obtener la tarjeta sanitaria '
+        'según la situación personal y la comunidad autónoma.',
+    requirements: [
+      'Consultar las condiciones de acceso a la asistencia sanitaria.',
+      'Comprobar el procedimiento establecido por la comunidad autónoma.',
+      'Acreditar la identidad y la situación personal cuando corresponda.',
+    ],
+    documents: [
+      'Pasaporte o documento de identidad, si se dispone de él.',
+      'Documentación que acredite la situación administrativa, si procede.',
+      'Certificado de empadronamiento, cuando sea necesario.',
+      'Otros documentos que solicite el servicio sanitario correspondiente.',
+    ],
+    steps: [
+      'Consultar las condiciones de acceso a la asistencia sanitaria.',
+      'Identificar el servicio sanitario de la comunidad autónoma.',
+      'Consultar dónde y cómo solicitar la tarjeta sanitaria.',
+      'Preparar la documentación requerida.',
+      'Presentar la solicitud siguiendo las instrucciones oficiales.',
+    ],
+    officialUrl: 'https://www.sanidad.gob.es/',
+  ),
+  Procedure(
+    id: 'empadronamiento',
+    category: 'Registro municipal',
+    title: 'Inscribirse en el padrón municipal',
+    description:
+        'Información para inscribirse en el padrón municipal '
+        'del municipio donde se reside habitualmente en España.',
+    requirements: [
+      'Consultar el procedimiento del ayuntamiento correspondiente.',
+      'Acreditar la identidad.',
+      'Aportar documentación que permita acreditar el domicilio '
+          'según las normas municipales.',
+    ],
+    documents: [
+      'Pasaporte o documento de identidad, si se dispone de él.',
+      'Justificante de domicilio aceptado por el ayuntamiento.',
+      'Autorización o documentación adicional, cuando corresponda.',
+    ],
+    steps: [
+      'Identificar el ayuntamiento correspondiente al domicilio.',
+      'Consultar los requisitos y el procedimiento de empadronamiento.',
+      'Preparar la documentación necesaria.',
+      'Presentar la solicitud presencialmente o por vía telemática, '
+          'si el ayuntamiento lo permite.',
+      'Consultar cómo obtener el volante o certificado de empadronamiento.',
+    ],
+    officialUrl: 'https://administracion.gob.es/',
+  ),
+  Procedure(
+    id: 'prestacion-economica',
+    category: 'Ayudas económicas y apoyo social',
+    title: 'Consultar ayudas y prestaciones económicas',
+    description:
+        'Orientación para localizar y consultar ayudas económicas '
+        'y prestaciones sociales disponibles en España según '
+        'la situación personal, familiar y económica.',
+    requirements: [
+      'Identificar la ayuda o prestación que puede corresponder.',
+      'Consultar los requisitos específicos de cada programa.',
+      'Comprobar las condiciones de residencia, ingresos y situación familiar.',
+      'Verificar los plazos y las condiciones de solicitud.',
+    ],
+    documents: [
+      'Documento de identidad, si se dispone de él.',
+      'Documentación que acredite la situación personal y familiar.',
+      'Justificantes de ingresos, cuando sean necesarios.',
+      'Documentación adicional solicitada por el organismo responsable.',
+    ],
+    steps: [
+      'Identificar las necesidades y el tipo de ayuda que se desea consultar.',
+      'Localizar el organismo público o entidad responsable.',
+      'Comprobar los requisitos y las condiciones de acceso.',
+      'Preparar la documentación solicitada.',
+      'Presentar la solicitud por el procedimiento correspondiente.',
+      'Consultar el estado de la solicitud y la resolución.',
     ],
     officialUrl: 'https://www.inclusion.gob.es/',
   ),

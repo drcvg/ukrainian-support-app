@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../data/organizations_data.dart';
+import '../../../../data/local/database_providers.dart';
 import '../../models/organization_model.dart';
 import '../widgets/organization_card.dart';
 
-class OrganizationsPage extends StatelessWidget {
+class OrganizationsPage extends ConsumerWidget {
   const OrganizationsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final organizationsAsync = ref.watch(organizationsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -32,126 +35,171 @@ class OrganizationsPage extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
-        children: [
-          const Text(
-            'Comunidad ucraniana en España',
-            style: TextStyle(
-              color: AppColors.dark,
-              fontSize: 23,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Encuentra asociaciones y organizaciones de la '
-            'comunidad ucraniana que desarrollan actividades '
-            'culturales, sociales y comunitarias en España.',
-            style: TextStyle(
-              color: AppColors.medium,
-              fontSize: 14,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 22),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
+      body: organizationsAsync.when(
+        data: (organizations) {
+          if (organizations.isEmpty) {
+            return const Center(
+              child: Text(
+                'No hay organizaciones disponibles.',
+                style: TextStyle(color: AppColors.medium, fontSize: 14),
+              ),
+            );
+          }
+
+          return _buildContent(context, organizations);
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.blue),
+        ),
+        error: (error, stackTrace) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.groups_rounded,
-                  color: AppColors.blue,
-                  size: 26,
+                  Icons.error_outline_rounded,
+                  color: AppColors.gray,
+                  size: 42,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Organizaciones disponibles',
-                        style: TextStyle(
-                          color: AppColors.medium,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${organizations.length} organizaciones',
-                        style: const TextStyle(
-                          color: AppColors.dark,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 12),
+                const Text(
+                  'No se pudieron cargar las organizaciones.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.medium, fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    ref.invalidate(organizationsProvider);
+                  },
+                  child: const Text('Reintentar'),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 22),
-          const Text(
-            'Directorio de organizaciones',
-            style: TextStyle(
-              color: AppColors.dark,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-            ),
+        ),
+      ),
+    );
+  }
+
+  String _attentionText(String mode) {
+    switch (mode) {
+      case 'presencial':
+        return 'Atención presencial';
+      case 'cita_previa':
+        return 'Cita previa';
+      case 'territorial':
+        return 'Atención territorial';
+      case 'digital':
+        return 'Atención digital';
+      default:
+        return 'Modalidad no confirmada';
+    }
+  }
+
+  Widget _buildContent(BuildContext context, List<Organization> organizations) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+      children: [
+        const Text(
+          'Comunidad ucraniana en España',
+          style: TextStyle(
+            color: AppColors.dark,
+            fontSize: 23,
+            fontWeight: FontWeight.w800,
           ),
-          const SizedBox(height: 13),
-          ...organizations.map(
-            (organization) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: OrganizationCard(
-                organization: organization,
-                onTap: () => _showOrganizationDetails(
-                  context,
-                  organization,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Encuentra asociaciones y organizaciones de la '
+          'comunidad ucraniana que desarrollan actividades '
+          'culturales, sociales y comunitarias en España.',
+          style: TextStyle(color: AppColors.medium, fontSize: 14, height: 1.5),
+        ),
+        const SizedBox(height: 22),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.groups_rounded, color: AppColors.blue, size: 26),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Organizaciones disponibles',
+                      style: TextStyle(color: AppColors.medium, fontSize: 12),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${organizations.length} organizaciones',
+                      style: const TextStyle(
+                        color: AppColors.dark,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 22),
+        const Text(
+          'Directorio de organizaciones',
+          style: TextStyle(
+            color: AppColors.dark,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 13),
+        ...organizations.map(
+          (organization) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: OrganizationCard(
+              organization: organization,
+              onTap: () => _showOrganizationDetails(context, organization),
             ),
           ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  color: AppColors.blue,
-                  size: 22,
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'La información de contacto y las actividades '
-                    'de cada organización pueden cambiar. '
-                    'Consulta siempre sus canales oficiales.',
-                    style: TextStyle(
-                      color: AppColors.medium,
-                      fontSize: 12,
-                      height: 1.5,
-                    ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline_rounded, color: AppColors.blue, size: 22),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'La información de contacto y las actividades '
+                  'de cada organización pueden cambiar. '
+                  'Consulta siempre sus canales oficiales.',
+                  style: TextStyle(
+                    color: AppColors.medium,
+                    fontSize: 12,
+                    height: 1.5,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -164,9 +212,7 @@ class OrganizationsPage extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: AppColors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return SafeArea(
@@ -213,42 +259,86 @@ class OrganizationsPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-                _detailRow(
-                  Icons.location_on_outlined,
-                  organization.city,
-                ),
-                if (organization.address.isNotEmpty)
-                  _detailRow(
-                    Icons.place_outlined,
-                    organization.address,
+
+                if (organization.locations.isNotEmpty) ...[
+                  const Text(
+                    'Ubicaciones y atención',
+                    style: TextStyle(
+                      color: AppColors.dark,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
+                  const SizedBox(height: 12),
+                  ...organization.locations
+                      .where((location) => location.active)
+                      .map(
+                        (location) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (location.name != null &&
+                                  location.name!.isNotEmpty)
+                                Text(
+                                  location.name!,
+                                  style: const TextStyle(
+                                    color: AppColors.dark,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+
+                              if (location.city != null &&
+                                  location.city!.isNotEmpty)
+                                _detailRow(
+                                  Icons.location_on_outlined,
+                                  location.city!,
+                                ),
+                              if (location.address != null &&
+                                  location.address!.isNotEmpty)
+                                _detailRow(
+                                  Icons.place_outlined,
+                                  location.address!,
+                                ),
+                              _detailRow(
+                                Icons.access_time_rounded,
+                                _attentionText(location.attentionMode),
+                              ),
+                              _detailRow(
+                                Icons.info_outline_rounded,
+                                location.locationStatus == 'verificada'
+                                    ? 'Ubicación verificada'
+                                    : 'Ubicación pendiente de verificar',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                ] else ...[
+                  if (organization.city.isNotEmpty)
+                    _detailRow(Icons.location_on_outlined, organization.city),
+                  if (organization.address.isNotEmpty)
+                    _detailRow(Icons.place_outlined, organization.address),
+                ],
                 if (organization.phone.isNotEmpty)
-                  _detailRow(
-                    Icons.phone_outlined,
-                    organization.phone,
-                  ),
+                  _detailRow(Icons.phone_outlined, organization.phone),
                 if (organization.email.isNotEmpty)
-                  _detailRow(
-                    Icons.email_outlined,
-                    organization.email,
-                  ),
+                  _detailRow(Icons.email_outlined, organization.email),
+
                 const SizedBox(height: 20),
                 if (organization.website.isNotEmpty)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => _openWebsite(
-                        context,
-                        organization.website,
-                      ),
+                      onPressed: () =>
+                          _openWebsite(context, organization.website),
                       icon: const Icon(Icons.open_in_new_rounded),
                       label: const Text('Visitar página oficial'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.blue,
                         foregroundColor: AppColors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -274,10 +364,7 @@ class OrganizationsPage extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                color: AppColors.medium,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: AppColors.medium, fontSize: 13),
             ),
           ),
         ],
@@ -285,23 +372,15 @@ class OrganizationsPage extends StatelessWidget {
     );
   }
 
-  Future<void> _openWebsite(
-    BuildContext context,
-    String url,
-  ) async {
+  Future<void> _openWebsite(BuildContext context, String url) async {
     final uri = Uri.tryParse(url);
 
     if (uri == null ||
-        !await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        )) {
+        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo abrir la página oficial.'),
-        ),
+        const SnackBar(content: Text('No se pudo abrir la página oficial.')),
       );
     }
   }
